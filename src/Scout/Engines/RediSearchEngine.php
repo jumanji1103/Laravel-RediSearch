@@ -107,13 +107,14 @@ class RediSearchEngine extends Engine
         return collect($results->getDocuments())->pluck('id')->values();
     }
 
-    public function map($results, $model)
+    public function map(Builder $builder, $results, $model)
     {
-        $count = $results->first();
+        $count = $results->getCount();
         if ($count === 0) {
             return Collection::make();
         }
-        $documents = $results->last();
+
+        $documents = $results->getDocuments();
         $keys = collect($documents)
             ->pluck('id')
             ->values()
@@ -141,5 +142,11 @@ class RediSearchEngine extends Engine
     public function getTotalCount($results)
     {
         return $results->first();
+    }
+
+    public function flush($model)
+    {
+        $index = new Index($this->redisRawClient, $model->searchableAs());
+        $index->drop();
     }
 }
