@@ -100,6 +100,7 @@ class RediSearchEngine extends Engine
     public function search(Builder $builder)
     {
         return (new Index($this->redisRawClient, $builder->index ?? $builder->model->searchableAs()))
+            ->language(Language::ITALIAN)
             ->search($builder->query);
     }
 
