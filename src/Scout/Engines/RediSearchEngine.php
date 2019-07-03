@@ -7,6 +7,9 @@ use Ehann\RedisRaw\RedisRawClientInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Scout\Builder;
 use Laravel\Scout\Engines\Engine;
+use Ehann\RediSearch\Fields\FieldFactory;
+use Carbon\Carbon;
+use Ehann\RediSearch\Language;
 
 class RediSearchEngine extends Engine
 {
@@ -34,19 +37,39 @@ class RediSearchEngine extends Engine
     {
         $index = new Index($this->redisRawClient, $models->first()->searchableAs());
 
-        $models
-            ->map(function ($model) {
-                $array = $model->toSearchableArray();
-                if (empty($array)) {
-                    return;
-                }
-                return array_merge(['id' => $model->getKey()], $array);
-            })
-            ->filter()
-            ->values()
-            ->each(function ($item) use ($index) {
-                $index->add($item);
-            });
+        foreach ($models as $model) {
+            $document = $index->makeDocument();
+            $searchables = $model->toSearchableArray();
+
+            foreach ($searchables as $key => $value) {
+                $field = FieldFactory::make($key, $value);
+                $document->{$key} = $field;
+            }
+
+            $document->setId($model->id);
+
+            if($model->created_at == $model->updated_at) {
+                //se è appena stato creato
+                $index->add($document);
+            }
+            else {
+                $index->replace($document);
+            }
+        }
+
+        // $models
+        //     ->map(function ($model) {
+        //         $array = $model->toSearchableArray();
+        //         if (empty($array)) {
+        //             return;
+        //         }
+        //         return array_merge(['id' => $model->getKey()], $array);
+        //     })
+        //     ->filter()
+        //     ->values()
+        //     ->each(function ($item) use ($index) {
+        //         $index->add($item);
+        //     });
     }
 
     /**
