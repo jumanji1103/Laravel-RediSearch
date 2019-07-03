@@ -14,6 +14,7 @@ class ImportCommand extends Command
                             {model : The model class to import.} 
                             {--recreate-index : Drop the index before importing.}
                             {--no-id : Do not select by "id" primary key.}
+                            {--delete : Drop the index.}
                             ';
     protected $description = 'Import models into index';
 
@@ -22,6 +23,12 @@ class ImportCommand extends Command
         $class = $this->argument('model');
         $model = new $class();
         $index = new Index($redisClient, $model->searchableAs());
+
+        if($this->option('delete')) {
+            $index->drop();
+            $this->info('Dropped index.');
+            return;
+        }
 
         $fields = array_keys($model->toSearchableArray());
         if (!$this->option('no-id')) {
