@@ -40,21 +40,22 @@ class RediSearchEngine extends Engine
         foreach ($models as $model) {
             $document = $index->makeDocument();
             $searchables = $model->toSearchableArray();
+            $searchables = (isset($searchables['searchable']))? $searchables['searchable'] : $searchables;
 
             foreach ($searchables as $key => $value) {
-                $field = FieldFactory::make($key, $value);
-                $document->{$key} = $field;
+                if($key != $model->getKeyName()) {
+                    $value = (is_array($value))? $value['value'] : $value;
+                    $value = $value ?? '';
+                    $document->$key = FieldFactory::make($key, $value);
+                    if(isset($value['weight'])){
+                        $document->$key->setWeight($value['weight']);
+                    }
+                }
             }
+            $id = (isset($searchables['id']))? $searchables['id'] : $model->id;
+            $document->setId($id);
 
-            $document->setId($model->id);
-
-            if($model->created_at == $model->updated_at) {
-                //se è appena stato creato
-                $index->add($document);
-            }
-            else {
-                $index->replace($document);
-            }
+            $index->replace($document);
         }
 
         // $models
