@@ -14,7 +14,7 @@ class RediSearchServiceProvider extends ServiceProvider
     {
         $this->app->singleton(RedisRawClientInterface::class, function ($app) {
             $clientAdapter = new ClientAdapter();
-            $clientAdapter->redis = $app->make('redis');
+            $clientAdapter->redis = $app->make('redis')->connection(env('REDISEARCH_CONNECTION', 'default'));
             return $clientAdapter;
         });
 
